@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Dedo Nervoso - O Jogo</title>
+    
+    <!-- Configurações básicas para PWA -->
+    <meta name="theme-color" content="#FF4757">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <style>
+        :root {
+            --cor-p1: #FF4757;
+            --cor-p2: #1E90FF;
+            --cor-fundo: #1E222B;
+            --cor-card: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Arial Rounded MT Bold', 'Helvetica Neue', sans-serif;
+            background-color: var(--cor-fundo);
+            color: #333;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Tela de Início / Configuração */
+        #tela-inicio {
+            background-color: var(--cor-card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            width: 90%;
+            max-width: 450px;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #FF4757;
+            margin-bottom: 5px;
+            font-size: 36px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .subtitulo {
+            color: #FFA500;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 25px;
+        }
+
+        .input-grupo {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 3px solid #ccc;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            user-select: text; /* Permite seleção e digitação normal do teclado */
+            -webkit-user-select: text;
+        }
+
+        input[id="p1-nome"] { border-color: var(--cor-p1); }
+        input[id="p2-nome"] { border-color: var(--cor-p2); }
+
+        #btn-comecar {
+            background-color: #2ED573;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 22px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #26af5f;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        #btn-comecar:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #26af5f;
+        }
+
+        /* Tela de Jogo */
+        #tela-jogo {
+            display: none;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            grid-template-columns: 150px 1fr 150px;
+        }
+
+        /* Botões de Velocidade nas Extremidades */
+        .btn-buzzer {
+            height: 100%;
+            border: none;
+            color: white;
+            font-size: 26px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: uppercase;
+            writing-mode: vertical-lr;
+            transform: rotate(180deg);
+            transition: background-color 0.1s;
+        }
+
+        #buzzer-p1 {
+            background-color: var(--cor-p1);
+            box-shadow: inset -10px 0 rgba(0,0,0,0.2);
+        }
+
+        #buzzer-p2 {
+            background-color: var(--cor-p2);
+            box-shadow: inset 10px 0 rgba(0,0,0,0.2);
+            writing-mode: vertical-rl;
+            transform: rotate(0deg);
+        }
+
+        .btn-buzzer:disabled {
+            background-color: #747d8c !important;
+            opacity: 0.4;
+        }
+
+        /* Painel Central */
+        .painel-central {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #f1f2f6;
+            height: 100%;
+            position: relative;
+        }
+
+        /* Placar superior */
+        .placar {
+            display: flex;
+            justify-content: space-between;
+            background: #fff;
+            padding: 12px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-size: 18px;
+        }
+
+        .placar-p1 { color: var(--cor-p1); font-weight: bold; }
+        .placar-p2 { color: var(--cor-p2); font-weight: bold; }
+
+        /* Área da Pergunta */
+        .area-pergunta {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            margin: 15px 0;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        #texto-pergunta {
+            font-size: 24px;
+            color: #2f3542;
+            line-height: 1.4;
+            font-weight: bold;
+        }
+
+        #status-turno {
+            font-size: 16px;
+            margin-top: 15px;
+            font-weight: bold;
+            color: #ffa500;
+            text-transform: uppercase;
+        }
+
+        /* Alternativas de Resposta */
+        .area-alternativas {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .btn-alternativa {
+            background: white;
+            border: 3px solid #ced6e0;
+            padding: 18px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.1s;
+            width: 100%;
+        }
+
+        .btn-alternativa:disabled {
+            background: #e4e7eb;
+            color: #a4b0be;
+            cursor: not-allowed;
+        }
+
+        /* Cores de Feedback nos botões centrais */
+        .vez-p1 { border-color: var(--cor-p1) !important; background-color: #ffeef0; }
+        .vez-p2 { border-color: var(--cor-p2) !important; background-color: #eef7ff; }
+
+        /* Tela de Fim de Jogo */
+        #tela-fim {
+            display: none;
+            background-color: var(--cor-card);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 450px;
+            z-index: 10;
+        }
+
+        #vencedor-texto {
+            font-size: 28px;
+            color: #2ed573;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        /* Adaptação para telas menores de celular */
+        @media (max-width: 600px) {
+            #tela-jogo {
+                grid-template-columns: 80px 1fr 80px;
+            }
+            .btn-buzzer {
+                font-size: 20px;
+            }
+            #texto-pergunta {
+                font-size: 19px;
+            }
+            .btn-alternativa {
+                font-size: 16px;
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. TELA DE INÍCIO -->
+    <div id="tela-inicio">
+        <h1>DEDO NERVOSO</h1>
+        <div class="subtitulo">⚡ O Desafio do Clique Rápido ⚡</div>
+        <div class="input-grupo">
+            <label for="p1-nome">Jogador 1 (Vermelho):</label>
+            <input type="text" id="p1-nome" value="" placeholder="Digite o nome..." maxlength="12">
+        </div>
+        <div class="input-grupo">
+            <label for="p2-nome">Jogador 2 (Azul):</label>
+            <input type="text" id="p2-nome" value="" placeholder="Digite o nome..." maxlength="12">
+        </div>
+        <p style="margin: 15px 0; font-size: 14px; color: #666; font-weight: bold;">Quem cravar 15 pontos primeiro vence!</p>
+        <button id="btn-comecar" onclick="iniciarJogo()">INICIAR CONFRONTO</button>
+    </div>
+
+    <!-- 2. TELA DE JOGO -->
+    <div id="tela-jogo">
+        <!-- Buzzer Jogador 1 (Esquerda) -->
+        <button id="buzzer-p1" class="btn-buzzer" onmousedown="baterBuzzer(1)" ontouchstart="baterBuzzer(1)">BATI!</button>
+        
+        <!-- Painel Central com Pergunta e Opções -->
+        <div class="painel-central">
+            <div class="placar">
+                <span id="placar-p1-txt" class="placar-p1">J1: 0/15</span>
+                <span style="font-weight: bold; color: #a4b0be;">DUELO</span>
+                <span id="placar-p2-txt" class="placar-p2">J2: 0/15</span>
+            </div>
+
+            <div class="area-pergunta">
+                <div id="texto-pergunta">Carregando pergunta...</div>
+                <div id="status-turno">PREPARE O DEDO E APERTE O SEU BOTÃO DIRETOR!</div>
+            </div>
+
+            <div class="area-alternativas">
+                <button id="alt-0" class="btn-alternativa" onclick="escolherResposta(0)" disabled>A) Opção A</button>
+                <button id="alt-1" class="btn-alternativa" onclick="escolherResposta(1)" disabled>B) Opção B</button>
+                <button id="alt-2" class="btn-alternativa" onclick="escolherResposta(2)" disabled>C) Opção C</button>
+            </div>
+        </div>
+
+        <!-- Buzzer Jogador 2 (Direita) -->
+        <button id="buzzer-p2" class="btn-buzzer" onmousedown="baterBuzzer(2)" ontouchstart="baterBuzzer(2)">BATI!</button>
+    </div>
+
+    <!-- 3. TELA DE FIM DE JOGO -->
+    <div id="tela-fim">
+        <h1>Fim de Jogo!</h1>
+        <div id="vencedor-texto">Jogador X Ganhou!</div>
+        <button id="btn-comecar" onclick="reiniciarJogo()">Nova Partida</button>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS: 100 PERGUNTAS DESAFIADORAS (FAIXA DOS 8-10 ANOS) ---
+        const bancoPerguntas = [
+            {q: "Qual é o único mamífero capaz de voar de verdade?", a: ["Morcego", "Esquilo-voador", "Pterodáctilo"], c: 0},
+            {q: "Qual planeta do Sistema Solar é conhecido por seus gigantescos anéis brilhantes?", a: ["Júpiter", "Saturno", "Netuno"], c: 1},
+            {q: "Qual destas estruturas faz parte do sistema esquelético humano?", a: ["Fêmur", "Neurônio", "Artéria"], c: 0},
+            {q: "De onde a planta extrai a maior parte dos nutrientes e água?", a: ["Das folhas", "Do caule", "Das raízes"], c: 2},
+            {q: "Quem escreveu o famoso livro infantil 'O Sítio do Picapau Amarelo'?", a: ["Mauricio de Sousa", "Monteiro Lobato", "Ziraldo"], c: 1},
+            {q: "Qual gás os seres humanos liberam na respiração para fora dos pulmões?", a: ["Oxigênio", "Gás Carbônico", "Nitrogênio"], c: 1},
+            {q: "Qual é o maior oceano do planeta Terra?", a: ["Oceano Atlântico", "Oceano Índico", "Oceano Pacífico"], c: 2},
+            {q: "Quantos centímetros existem em 1 metro e meio?", a: ["150 centímetros", "105 centímetros", "15 centímetros"], c: 0},
+            {q: "Qual desses animais é um anfíbio?", a: ["Lagartixa", "Sapo", "Jacaré"], c: 1},
+            {q: "Qual linha imaginária divide a Terra em Hemisfério Norte e Sul?", a: ["Linha do Equador", "Meridiano de Greenwich", "Trópico de Capricórnio"], c: 0},
+            {q: "Como chamamos um triângulo que possui todos os três lados iguais?", a: ["Isósceles", "Escaleno", "Equilátero"], c: 2},
+            {q: "Qual órgão do corpo humano é responsible por bombear o sangue?", a: ["Pulmão", "Coração", "Rim"], c: 1},
+            {q: "Qual é a capital oficial do Japão?", a: ["Pequim", "Seul", "Tóquio"], c: 2},
+            {q: "Quem pintou o quadro da 'Mona Lisa'?", a: ["Leonardo da Vinci", "Michelangelo", "Vincent van Gogh"], c: 0},
+            {q: "Que tipo de animal é uma tarântula?", a: ["Aracnídeo", "Inseto", "Molusco"], c: 0},
+            {q: "Quantos anos tem exatamente um século?", a: ["50 anos", "100 anos", "1000 anos"], c: 1},
+            {q: "Qual dessas substâncias é a melhor condutora de eletricidade?", a: ["Borracha", "Cobre (Metal)", "Madeira"], c: 1},
+            {q: "Qual país do mundo tem o formato territorial parecido com uma bota?", a: ["Itália", "França", "Espanha"], c: 0},
+            {q: "Qual o resultado da multiplicação de 7 vezes 8?", a: ["54", "56", "62"], c: 1},
+            {q: "Quantos ossos aproximados tem um ser humano adulto?", a: ["62 ossos", "106 ossos", "206 ossos"], c: 2},
+            {q: "Qual cientista famoso formulou a teoria da gravidade ao ver uma maçã cair?", a: ["Albert Einstein", "Isaac Newton", "Galileu Galilei"], c: 1},
+            {q: "Qual é o estado físico da lava que sai de um vulcão ativo?", a: ["Líquido pastoso", "Sólido cristalino", "Gasoso"], c: 0},
+            {q: "Em qual continente fica o Egito e suas famosas pirâmides?", a: ["África", "Ásia", "Europa"], c: 0},
+            {q: "Qual personagem mitológico grego tinha cobras na cabeça no lugar de cabelo?", a: ["Medusa", "Minotauro", "Hércules"], c: 0},
+            {q: "O que a palavra 'cronômetro' mede principalmente?", a: ["A temperatura", "O tempo", "A distância"], c: 1},
+            {q: "Qual dessas palavras é classificada como um oxítona?", a: ["Mesa", "Café", "Árvore"], c: 1},
+            {q: "De qual metal precioso eram feitas as moedas chamadas dobrões na época dos piratas?", a: ["Prata", "Ouro", "Bronze"], c: 1},
+            {q: "Qual grupo de animais extintos viveu na Era Mesozoica?", a: ["Mamutes", "Tigres-dente-de-sabre", "Dinossauros"], c: 2},
+            {q: "Se um relógio de ponteiros marca 15:45, para onde aponta o ponteiro grande?", a: ["Para o 3", "Para o 6", "Para o 9"], c: 2},
+            {q: "Qual elemento químico é essencial para a formação dos nossos dentes e ossos?", a: ["Cálcio", "Ferro", "Sódio"], c: 0},
+            {q: "Qual é o maior país em extensão territorial do mundo?", a: ["Canadá", "Rússia", "Estados Unidos"], c: 1},
+            {q: "Qual o nome do herói da mitologia que realizou '12 Trabalhos'?", a: ["Aquiles", "Thor", "Hércules"], c: 2},
+            {q: "O que acontece com a água quando ela atinge a temperatura de 100°C?", a: ["Congela", "Ferve e vira vapor", "Muda de cor"], c: 1},
+            {q: "Que animal marinho possui três corações e sangue azul?", a: ["Tubarão", "Polvo", "Baleia Orca"], c: 1},
+            {q: "Quem foi o inventor brasileiro considerado o pai da aviação com o 14-Bis?", a: ["Santos Dumont", "Machado de Assis", "Rui Barbosa"], c: 0},
+            {q: "Qual destas frações representa exatamente a metade de um total?", a: ["1/4", "1/3", "1/2"], c: 2},
+            {q: "Qual é a principal função dos glóbulos brancos no nosso sangue?", a: ["Transportar oxigênio", "Defender o corpo de doenças", "Causar o sangramento"], c: 1},
+            {q: "Qual oceano banha a costa oeste dos Estados Unidos e a leste da Ásia?", a: ["Pacífico", "Atlântico", "Ártico"], c: 0},
+            {q: "Qual ave é conhecida por conseguir imitar a voz humana com perfeição?", a: ["Papagaio", "Tucano", "Pica-pau"], c: 0},
+            {q: "Qual é o resultado de 120 dividido por 4?", a: ["25", "30", "40"], c: 1},
+            {q: "Qual é a moeda oficial utilizada pelos países da União Europeia?", a: ["Dólar", "Libra", "Euro"], c: 2},
+            {q: "Que tipo de corpo celeste é a Lua?", a: ["Um cometa", "Um satélite natural", "Um planeta anão"], c: 1},
+            {q: "Quantos lados tem uma figura geométrica chamada pentágono?", a: ["5 lados", "6 lados", "8 lados"], c: 0},
+            {q: "Qual substância dá a cor verde às folhas das plantas?", a: ["Hemoglobina", "Clorofila", "Queratina"], c: 1},
+            {q: "Qual herói literário morava na Terra do Nunca e nunca crescia?", a: ["Pinóquio", "Peter Pan", "Tom Sawyer"], c: 1},
+            {q: "Em qual cidade brasileira fica a famosa estátua do Cristo Redentor?", a: ["São Paulo", "Salvador", "Rio de Janeiro"], c: 2},
+            {q: "Qual animal é considerado o maior predador terrestre da atualidade?", a: ["Urso-polar", "Tigre siberiano", "Leão africano"], c: 0},
+            {q: "Quantos minutos existem em um período de três horas completas?", a: ["120 minutos", "180 minutos", "200 minutos"], c: 1},
+            {q: "Qual é a camada de ar que envolve e protege a Terra?", a: ["Atmosfera", "Biosfera", "Crosta terrestre"], c: 0},
+            {q: "De onde é extraído o combustível gasolina?", a: ["Do carvão mineral", "Do petróleo", "Do gás natural"], c: 1},
+            {q: "Qual é a montanha mais alta do mundo acima do nível do mar?", a: ["Monte Kilimanjaro", "Monte Everest", "Monte Fuji"], c: 1},
+            {q: "Qual classe gramatical serve para indicar uma ação na frase?", a: ["Substantivo", "Adjetivo", "Verbo"], c: 2},
+            {q: "Qual gás compõe a maior parte da atmosfera da Terra?", a: ["Oxigênio", "Nitrogênio", "Hidrogênio"], c: 1},
+            {q: "Quem liderou a famosa viagem que provou que a Terra podia ser navegada em volta?", a: ["Cristóvão Colombo", "Fernão de Magalhães", "Marco Polo"], c: 1},
+            {q: "Qual órgão do corpo humano armazena temporariamente a comida que engolimos?", a: ["Estômago", "Intestino grosso", "Fígado"], c: 0},
+            {q: "Qual o resultado matemático da expressão (3 + 4) x 2?", a: ["11", "14", "24"], c: 1},
+            {q: "Qual réptil é famoso por conseguir regenerar (recriar) o rabo se for cortado?", a: ["Lagartixa", "Cobra", "Tartaruga"], c: 0},
+            {q: "Qual é a estrela mais próxima do nosso planeta Terra?", a: ["Alfa Centauri", "Estrela Cadente", "O Sol"], c: 2},
+            {q: "Qual continente abriga o Polo Sul do nosso planeta?", a: ["Antártida", "Europa", "Ásia"], c: 0},
+            {q: "Quantas cordas tem um violino clássico padrão?", a: ["4 cordas", "6 cordas", "12 cordas"], c: 0},
+            {q: "Que tipo de animal produz uma teia para caçar suas presas?", a: ["Aranha", "Formiga", "Escorpião"], c: 0},
+            {q: "Quem é o autor do clássico livro 'O Pequeno Príncipe'?", a: ["Antoine de Saint-Exupéry", "J.K. Rowling", "C.S. Lewis"], c: 0},
+            {q: "Que metal líquido é usado em termômetros antigos para medir febre?", a: ["Mercúrio", "Chumbo", "Alumínio"], c: 0},
+            {q: "Quantas faces possui um dado comum de seis lados?", a: ["4 faces", "6 faces", "8 faces"], c: 1},
+            {q: "Qual destes animais é classificado como invertebrado?", a: ["Peixe", "Minhoca", "Sapo"], c: 1},
+            {q: "Qual é o idioma mais falado nativamente no mundo?", a: ["Inglês", "Espanhol", "Mandarim (Chinês)"], c: 2},
+            {q: "Como se chama o processo de transformação da lagarta em borboleta?", a: ["Metamorfose", "Fotossíntese", "Evolução"], c: 0},
+            {q: "Qual a capital dos Estados Unidos?", a: ["Nova York", "Miami", "Washington, D.C."], c: 2},
+            {q: "Que tipo de instrumento serve para olhar estrelas e planetas distantes?", a: ["Microscópio", "Telescópio", "Binóculo"], c: 1},
+            {q: "Qual é a raiz quadrada do número 49?", a: ["6", "7", "8"], c: 1},
+            {q: "Qual é o maior dente de um elefante, usado para defesa?", a: ["Canino", "Presa de marfim", "Molar"], c: 1},
+            {q: "Qual navio famoso colidiu com um iceberg em sua viagem de estreia em 1912?", a: ["Titanic", "Carpathia", "Santa Maria"], c: 0},
+            {q: "Qual destes órgãos nos dá o sentido do equilíbrio do corpo?", a: ["Os olhos", "O ouvido interno", "O cerebelo"], c: 1},
+            {q: "Qual planeta é conhecido por ser o mais quente, apesar de não ser o mais perto do Sol?", a: ["Mercúrio", "Vênus", "Marte"], c: 1},
+            {q: "Qual é o principal bioma da região central do Brasil?", a: ["Cerrado", "Caatinga", "Pampa"], c: 0},
+            {q: "Qual herói das lendas britânicas roubava dos ricos para dar aos pobres?", a: ["Rei Arthur", "Robin Hood", "Lancelot"], c: 1},
+            {q: "Que força invisível atrai todos os objetos em direção ao chão na Terra?", a: ["Gravidade", "Magnetismo", "Fricção"], c: 0},
+            {q: "Quantos ossos compõem a caixa torácica (as costelas) de um lado normal?", a: ["10 costelas", "12 costelas", "14 costelas"], c: 1},
+            {q: "Qual criatura mitológica é metade homem e metade cavalo?", a: ["Centauro", "Minotauro", "Pégaso"], c: 0},
+            {q: "Qual o resultado de 15 x 4?", a: ["50", "60", "70"], c: 1},
+            {q: "Que invenção histórica marcou o fim da Pré-História?", a: ["A roda", "A escrita", "O fogo"], c: 1},
+            {q: "Que tipo de energia é gerada pela força dos ventos?", a: ["Energia Eólica", "Energia Solar", "Energia Hidrelétrica"], c: 0},
+            {q: "Qual o nome da estrutura transparente no olho que foca a luz?", a: ["Pupila", "Retina", "Cristalino"], c: 2},
+            {q: "Qual país europeu colonizou a maior parte da América do Norte onde hoje são os EUA?", a: ["Inglaterra", "Espanha", "França"], c: 0},
+            {q: "Qual bicho marinho é conhecido por ser o mamífero mais inteligente dos oceanos?", a: ["Baleia Azul", "Golfinho", "Tubarão Branco"], c: 1},
+            {q: "Se você misturar tinta azul e tinta vermelha, que cor vai obter?", a: ["Roxo", "Laranja", "Verde"], c: 0},
+            {q: "Quantos mililitros (ml) existem em uma garrafa de 2 litros de refrigerante?", a: ["1000 ml", "1500 ml", "2000 ml"], c: 2},
+            {q: "Em que ano o homem pisou na Lua pela primeira vez?", a: ["1959", "1969", "1979"], c: 1},
+            {q: "Qual destas palavras precisa obrigatoriamente usar acento circunflexo?", a: ["Vovô", "Vovó", "Água"], c: 0},
+            {q: "Quantos dentes de leite uma criança costuma ter antes de nascerem os definitivos?", a: ["10 dentes", "20 dentes", "32 dentes"], c: 1},
+            {q: "Qual rio disputa o posto de mais longo do mundo com o Rio Nilo?", a: ["Rio Amazonas", "Rio Mississippi", "Rio Congo"], c: 0},
+            {q: "Qual cientista criou o sistema de vacinação moderno?", a: ["Louis Pasteur", "Edward Jenner", "Alexander Fleming"], c: 1},
+            {q: "Qual é o principal componente do esmalte dos nossos dentes?", a: ["Ferro", "Minerais de Cálcio", "Queratina"], c: 1},
+            {q: "Como chamamos um polígono que possui exatamente 8 lados?", a: ["Hexágono", "Heptágono", "Octógono"], c: 2},
+            {q: "Qual destas aves não consegue voar de jeito nenhum?", a: ["Avestruz", "Águia", "Falcão"], c: 0},
+            {q: "Que monumento histórico foi construído na China para proteger contra invasões?", a: ["Coliseu", "Grande Muralha", "Pirâmides"], c: 1},
+            {q: "Qual é o metal mais abundante encontrado na crosta do planeta Terra?", a: ["Ouro", "Alumínio", "Cobre"], c: 1},
+            {q: "Qual o resultado de 9 x 9?", a: ["72", "81", "90"], c: 1},
+            {q: "Qual fenômeno natural é medido pela Escala Richter?", a: ["Furacão", "Terremoto", "Erupção Vulcânica"], c: 1},
+            {q: "Qual órgão do corpo limpa o nosso sangue eliminando as impurezas pela urina?", a: ["Fígado", "Coração", "Rins"], c: 2}
+        ];
+
+        // --- VARIÁVEIS DE ESTADO DO JOGO ---
+        let perguntasEmbaralhadas = [];
+        let perguntaAtualIdx = 0;
+        let pontosP1 = 0;
+        let pontosP2 = 0;
+        let nomeP1 = "Jogador 1";
+        let nomeP2 = "Jogador 2";
+        
+        let quemApertouBuzzer = null; 
+        let opcoesBloqueadas = []; 
+        let modoRecuperacao = false; 
+
+        // --- FUNÇÕES DE CONTROLE ---
+
+        function embaralharPerguntas() {
+            perguntasEmbaralhadas = [...bancoPerguntas];
+            for (let i = perguntasEmbaralhadas.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [perguntasEmbaralhadas[i], perguntasEmbaralhadas[j]] = [perguntasEmbaralhadas[j], perguntasEmbaralhadas[i]];
+            }
+        }
+
+        function iniciarJogo() {
+            // Se o campo estiver em branco, adota um nome genérico automaticamente para não quebrar a tela
+            nomeP1 = document.getElementById('p1-nome').value.trim() || "Jogador Vermelho";
+            nomeP2 = document.getElementById('p2-nome').value.trim() || "Jogador Azul";
+
+            document.getElementById('tela-inicio').style.display = 'none';
+            document.getElementById('tela-fim').style.display = 'none';
+            document.getElementById('tela-jogo').style.display = 'grid';
+
+            pontosP1 = 0;
+            pontosP2 = 0;
+            perguntaAtualIdx = 0;
+            embaralharPerguntas();
+            atualizarPlacar();
+            carregarPergunta();
+        }
+
+        function atualizarPlacar() {
+            document.getElementById('placar-p1-txt').innerText = `${nomeP1}: ${pontosP1}/15`;
+            document.getElementById('placar-p2-txt').innerText = `${nomeP2}: ${pontosP2}/15`;
+        }
+
+        function carregarPergunta() {
+            quemApertouBuzzer = null;
+            opcoesBloqueadas = [];
+            modoRecuperacao = false;
+
+            document.getElementById('buzzer-p1').disabled = false;
+            document.getElementById('buzzer-p2').disabled = false;
+            document.getElementById('status-turno').innerText = "PREPARE O DEDO E APERTE O SEU BOTÃO DIRETOR!";
+            document.getElementById('status-turno').style.color = "#ffa500";
+
+            for (let i = 0; i < 3; i++) {
+                const btn = document.getElementById(`alt-${i}`);
+                btn.disabled = true;
+                btn.classList.remove('vez-p1', 'vez-p2');
+            }
+
+            let dadosPergunta = perguntasEmbaralhadas[perguntaAtualIdx];
+            document.getElementById('texto-pergunta').innerText = dadosPergunta.q;
+            
+            for (let i = 0; i < 3; i++) {
+                document.getElementById(`alt-${i}`).innerText = `${String.fromCharCode(65 + i)}) ${dadosPergunta.a[i]}`;
+            }
+        }
+
+        function baterBuzzer(jogador) {
+            if (quemApertouBuzzer !== null) return; 
+
+            quemApertouBuzzer = jogador;
+            
+            document.getElementById('buzzer-p1').disabled = true;
+            document.getElementById('buzzer-p2').disabled = true;
+
+            let nomeVez = (jogador === 1) ? nomeP1 : nomeP2;
+            let statusTxt = document.getElementById('status-turno');
+            statusTxt.innerText = `VEZ DE: ${nomeVez.toUpperCase()}! Escolha agora!`;
+            statusTxt.style.color = (jogador === 1) ? 'var(--cor-p1)' : 'var(--cor-p2)';
+
+            for (let i = 0; i < 3; i++) {
+                const btn = document.getElementById(`alt-${i}`);
+                if (!opcoesBloqueadas.includes(i)) {
+                    btn.disabled = false;
+                    btn.classList.add(jogador === 1 ? 'vez-p1' : 'vez-p2');
+                }
+            }
+        }
+
+        function escolherResposta(idxAlternativa) {
+            let dadosPergunta = perguntasEmbaralhadas[perguntaAtualIdx];
+            
+            if (idxAlternativa === dadosPergunta.c) {
+                // ACERTOU
+                if (quemApertouBuzzer === 1) pontosP1++;
+                else pontosP2++;
+
+                atualizarPlacar();
+                verificarFimDeJogo();
+            } else {
+                // ERROU
+                opcoesBloqueadas.push(idxAlternativa);
+                
+                const btnErrado = document.getElementById(`alt-${idxAlternativa}`);
+                btnErrado.disabled = true;
+                btnErrado.classList.remove('vez-p1', 'vez-p2');
+
+                if (!modoRecuperacao) {
+                    modoRecuperacao = true;
+                    let proximoJogador = (quemApertouBuzzer === 1) ? 2 : 1;
+                    quemApertouBuzzer = proximoJogador;
+
+                    let nomeVez = (proximoJogador === 1) ? nomeP1 : nomeP2;
+                    let statusTxt = document.getElementById('status-turno');
+                    statusTxt.innerText = `ERROU! CHANCE DE RECUPERAÇÃO PARA: ${nomeVez.toUpperCase()}!`;
+                    statusTxt.style.color = (proximoJogador === 1) ? 'var(--cor-p1)' : 'var(--cor-p2)';
+
+                    for (let i = 0; i < 3; i++) {
+                        const btn = document.getElementById(`alt-${i}`);
+                        if (!opcoesBloqueadas.includes(i)) {
+                            btn.disabled = false;
+                            btn.classList.add(proximoJogador === 1 ? 'vez-p1' : 'vez-p2');
+                        }
+                    }
+                } else {
+                    document.getElementById('status-turno').innerText = "Ambos falharam! Trocando de pergunta...";
+                    document.getElementById('status-turno').style.color = "#747d8c";
+                    setTimeout(proximaPergunta, 2000);
+                }
+            }
+        }
+
+        function verificarFimDeJogo() {
+            if (pontosP1 >= 15 || pontosP2 >= 15) {
+                document.getElementById('tela-jogo').style.display = 'none';
+                document.getElementById('tela-fim').style.display = 'block';
+                
+                let vencedor = (pontosP1 >= 15) ? nomeP1 : nomeP2;
+                document.getElementById('vencedor-texto').innerText = `💥 ${vencedor} dominou o Dedo Nervoso! 💥`;
+                document.getElementById('vencedor-texto').style.color = (pontosP1 >= 15) ? 'var(--cor-p1)' : 'var(--cor-p2)';
+            } else {
+                setTimeout(proximaPergunta, 1500);
+            }
+        }
+
+        function proximaPergunta() {
+            perguntaAtualIdx++;
+            if (perguntaAtualIdx >= perguntasEmbaralhadas.length) {
+                perguntaAtualIdx = 0;
+                embaralharPerguntas();
+            }
+            carregarPergunta();
+        }
+
+        function reiniciarJogo() {
+            document.getElementById('tela-fim').style.display = 'none';
+            document.getElementById('tela-inicio').style.display = 'block';
+        }
+
+        // Previne menus de clique longo em telas touch
+        window.oncontextmenu = function(event) {
+             event.preventDefault();
+             event.stopPropagation();
+             return false;
+        };
+    </script>
+</body>
+</html>
